@@ -1,0 +1,18 @@
+steps:
+  - name: Overte Domain Server AIO Docker
+    when:
+      - branch: main
+        event: tag
+    image: woodpeckerci/plugin-docker-buildx:4.2
+    settings:
+      platforms: linux/amd64
+      repo: alveusdev/overtedomainserver
+      tags: latest
+      auto_tag: true
+      build_args:
+        - TAG=${CI_COMMIT_TAG}
+        - REPO=https://github.com/overte-org/overte
+      username:
+        from_secret: DOCKERHUB_USER
+      password:
+        from_secret: DOCKERHUB_TOKEN
