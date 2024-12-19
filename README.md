@@ -36,4 +36,24 @@ Domain server web UI available on port `40100` (HTTP)
 
 ---
 
+Running with Docker Compose 
+
+```yaml
+services:
+  overte-server:
+    image: alveusdev/overtedomainserver:latest
+    container_name: overte-server
+    restart: unless-stopped
+    expose:
+      - "40100-40102"
+    ports:
+      - "40100-40102:40100-40102"
+      - "40100-40102:40100-40102/udp"
+      - "48000-48006:48000-48006/udp"
+    volumes:
+      - "./logs:/var/log/overte"
+      - "./data:/root/.local/share/Overte"
+```
+
+
 [![status-badge](https://wci.alveus.dev/api/badges/31/status.svg)](https://wci.alveus.dev/repos/31)
