@@ -76,8 +76,6 @@ RUN /opt/overte/domain-server --version > /opt/overte/version && \
 # Install supervisor config
 COPY ./services.conf /etc/supervisor/conf.d/overte.conf
 
-RUN useradd -Ms /bin/bash services
-
 RUN mkdir /var/log/overte
 
 # Expose required ports
