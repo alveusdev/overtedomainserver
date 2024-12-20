@@ -23,10 +23,10 @@ RUN cd /opt/overte-build \
     && export RELEASE_NUMBER=${TAG} \
     && if [ $(uname -m) == "x86_64" ]; then \
         # amd64 \
-        sudo cmake -G "Unix Makefiles" -DSERVER_ONLY=1 -DBUILD_TOOLS=1 -DOVERTE_CPU_ARCHITECTURE=-msse3 ..; \
+        cmake -G "Unix Makefiles" -DSERVER_ONLY=1 -DBUILD_TOOLS=1 -DOVERTE_CPU_ARCHITECTURE=-msse3 ..; \
     else \
         # aarch64 \
-        VCPKG_FORCE_SYSTEM_BINARIES=1 sudo cmake -G "Unix Makefiles" -DSERVER_ONLY=1 -DBUILD_TOOLS=1 -DOVERTE_CPU_ARCHITECTURE= ..; \
+        VCPKG_FORCE_SYSTEM_BINARIES=1 cmake -G "Unix Makefiles" -DSERVER_ONLY=1 -DBUILD_TOOLS=1 -DOVERTE_CPU_ARCHITECTURE= ..; \
     fi
 
 # put number after -j to limit cores.
