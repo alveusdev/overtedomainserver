@@ -5,8 +5,7 @@ ARG TAG=master
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG TERM=linux
-ARG MAKEFLAGS=-j2
-ARG TARGETARCH
+ARG MAKEFLAGS=-j4
 
 # Create build and output directory
 RUN mkdir /opt/overte-build \
@@ -21,12 +20,27 @@ RUN cd /opt/overte-build \
     && cd ./build \
     && export OVERTE_USE_SYSTEM_QT=1 \
     && export RELEASE_TYPE=PRODUCTION \
-    && cmake -DSERVER_ONLY=1 -DOVERTE_CPU_ARCHITECTURE=-msse3 ..
+    && export RELEASE_NUMBER=${TAG} \
+    && if [ $(uname -m) == "x86_64" ]; then \
+        # amd64 \
+        sudo cmake -G "Unix Makefiles" -DSERVER_ONLY=1 -DBUILD_TOOLS=1 -DOVERTE_CPU_ARCHITECTURE=-msse3 ..; \
+    else \
+        # aarch64 \
+        VCPKG_FORCE_SYSTEM_BINARIES=1 sudo cmake -G "Unix Makefiles" -DSERVER_ONLY=1 -DBUILD_TOOLS=1 -DOVERTE_CPU_ARCHITECTURE= ..; \
+    fi
 
+# put number after -j to limit cores.
 RUN cd /opt/overte-build/build \
-    && make
+    && make -j`nproc` domain-server \
+    && make -j`nproc` assignment-client \
+    && make -j`nproc` oven  # needed for baking
 
-# Move built binraries etc to output directory
+RUN VCPKG_PATH=$(python3 /opt/overte-build/prebuild.py --get-vcpkg-path --build-root . --quiet) && \
+    echo "VCPKG Path: $VCPKG_PATH" && \
+    find "$VCPKG_PATH" -type f -name "libnode.so.108" -exec cp {} /opt/overte-build/build/libraries \; || \
+    echo "libnode.so.108 not found in $VCPKG_PATH"
+
+# Move built binaries etc to output directory
 RUN mv /opt/overte-build/build/libraries /opt/overte/libraries \
     && mv /opt/overte-build/build/assignment-client/assignment-client /opt/overte/assignment-client \
     && mv /opt/overte-build/build/assignment-client/plugins /opt/overte/plugins \
@@ -34,26 +48,15 @@ RUN mv /opt/overte-build/build/libraries /opt/overte/libraries \
     && mv /opt/overte-build/domain-server/resources /opt/overte/resources
 
 # Runtime
-FROM --platform=$BUILDPLATFORM debian:bookworm-slim AS runtime
+FROM debian:bookworm-slim AS runtime
 
 LABEL maintainer="alveus.dev"
 LABEL description="Overte Domain Server AIO"
 
 ARG DEBIAN_FRONTEND=noninteractive
 ARG TERM=linux
-ARG TARGETARCH
 
 RUN echo UTC >/etc/timezone
-
-RUN echo 'APT::Install-Suggests "0";' >> /etc/apt/apt.conf.d/00-docker
-RUN echo 'APT::Install-Recommends "0";' >> /etc/apt/apt.conf.d/00-docker
-
-# Install dependencies
-RUN apt update && apt install -y tzdata supervisor libopengl-dev ca-certificates \
-    libqt5widgets5 libqt5network5 libqt5script5 libqt5core5a libqt5qml5 libqt5websockets5 libqt5gui5 libnode108
-
-# Cleanup
-RUN apt clean && rm -rf /var/lib/app/lists/*
 
 # Install libraries
 COPY --from=build /opt/overte/libraries/*/*.so /lib/
